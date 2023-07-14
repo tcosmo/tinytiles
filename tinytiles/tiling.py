@@ -31,18 +31,8 @@ class SquareGlues(object):
         return str(self)
 
 
-class NoTileCanFit(object):
-    """Represents the situation where no tile can fit at a position."""
-
-    def __init__(self):
-        pass
-
-
-class ManyTilesCanFit(object):
-    """Represents the situation where more than one tile can fit at a position."""
-
-    def __init__(self):
-        pass
+NoTileCanFit = "NoTileCanFit"
+ManyTilesCanFit = "ManyTilesCanFit"
 
 
 class Tiling(object):
@@ -61,25 +51,22 @@ class Tiling(object):
             self.tileset: list[SquareGlues] = tileset
 
         if copy_tiling:
-            self.tiling: Dict[
-                TilePosition, SquareGlues | NoTileCanFit | ManyTilesCanFit
-            ] = tiling.copy()
+            self.tiling: Dict[TilePosition, SquareGlues | str] = tiling.copy()
         else:
-            self.tiling: Dict[
-                TilePosition, SquareGlues | NoTileCanFit | ManyTilesCanFit
-            ] = tiling
+            self.tiling: Dict[TilePosition, SquareGlues | str] = tiling
 
         self._position = _position  # position updated by factories
 
     def get_tile_from_id(
-        self, tile: SquareGlues | list[tuple[int, int, int, int]] | int
+        self, tile: SquareGlues | list[tuple[int, int, int, int]] | int | str
     ) -> SquareGlues:
+        if isinstance(tile, str) or isinstance(tile, SquareGlues):
+            return tile
+
         if type(tile) == int:
             return self.tileset[tile]
 
-        if type(tile) != SquareGlues:
-            tile = SquareGlues(*tile)
-        return tile
+        return SquareGlues(*tile)
 
     def move(self, step_2D: TilePosition):
         return Tiling(self.tileset, self.tiling, self._position + step_2D)
@@ -117,9 +104,7 @@ class Tiling(object):
 
         return tiling_to_svg(self)
 
-    def __getitem__(
-        self, position: TilePosition
-    ) -> SquareGlues | NoTileCanFit | ManyTilesCanFit:
+    def __getitem__(self, position: TilePosition) -> SquareGlues | str:
         return self.tiling[position]
 
     def __iter__(self):

@@ -1,10 +1,18 @@
 import drawsvg as draw
-from tinytiles.tiling import Tiling, SquareGlues, NoTileCanFit, ManyTilesCanFit
+from tinytiles.tiling import (
+    Tiling,
+    SquareGlues,
+    NoTileCanFit,
+    ManyTilesCanFit,
+)
 from tinytiles.utils_2D import TilePosition
 
 TILE_SIZE = 32
 null_glue_color = "#CACACA"
 color_wheel = ["#E6C58F", "#0AC52E", "#E37998", "#3FB3F3"]
+color_no_tile_can_fit = "#ff0000"
+color_many_tiles_can_fit = "#00af00"
+special_tiles_opacity = 0.4
 
 
 def random_color() -> str:
@@ -103,11 +111,19 @@ def tile_name_to_svg(tiling, tile, tile_center_x, tile_center_y):
 def tile_to_svg(
     tiling: Tiling,
     position: TilePosition,
-    tile: SquareGlues | NoTileCanFit | ManyTilesCanFit,
+    tile: SquareGlues | str,
     bounding_box: tuple[int, int, int, int],
 ):
     svg_position = tile_pos_to_svg_pos(position, bounding_box)
     svg_tile = draw.Group()
+
+    fill_color = null_glue_color
+
+    if type(tile) == str:
+        if tile == NoTileCanFit:
+            fill_color = color_no_tile_can_fit
+        elif tile == ManyTilesCanFit:
+            fill_color = color_many_tiles_can_fit
 
     # Tile square
     svg_tile.append(
@@ -118,9 +134,13 @@ def tile_to_svg(
             TILE_SIZE,
             stroke="gray",
             stroke_width=1,
-            fill=null_glue_color,
+            fill=fill_color,
+            fill_opacity=1 if type(tile) != str else special_tiles_opacity,
         )
     )
+
+    if type(tile) == str:
+        return svg_tile
 
     tile_center_x = svg_position.x + TILE_SIZE / 2
     tile_center_y = svg_position.y + TILE_SIZE / 2
