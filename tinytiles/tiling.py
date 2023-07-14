@@ -13,6 +13,9 @@ class SquareGlues(object):
         self.south: int | None = south
         self.west: int | None = west
 
+    def __getitem__(self, i: int) -> int | None:
+        return [self.north, self.east, self.south, self.west][i]
+
     def __eq__(self, other: "SquareGlues") -> bool:
         return (
             self.north == other.north
@@ -68,18 +71,34 @@ class Tiling(object):
 
         self._position = _position  # position updated by factories
 
-    def get_tile_from_id(self, tile: SquareGlues | int) -> SquareGlues:
+    def get_tile_from_id(
+        self, tile: SquareGlues | list[tuple[int, int, int, int]] | int
+    ) -> SquareGlues:
         if type(tile) == int:
             return self.tileset[tile]
+
+        if type(tile) != SquareGlues:
+            tile = SquareGlues(*tile)
         return tile
 
-    def put_tiles(self, tiles: list[SquareGlues | int], step_2D: TilePosition):
+    def move(self, step_2D: TilePosition):
+        return Tiling(self.tileset, self.tiling, self._position + step_2D)
+
+    def reset_pos(self):
+        return Tiling(self.tileset, self.tiling)
+
+    def put_tiles(
+        self,
+        tiles: list[SquareGlues | list[tuple[int, int, int, int]] | int],
+        step_2D: TilePosition,
+    ):
         new_tiling = self.tiling.copy()
         new_position = self._position
-        for tile in tiles:
+        for i, tile in enumerate(tiles):
             tile = self.get_tile_from_id(tile)
             new_tiling[new_position] = tile
-            new_position += step_2D
+            if i != len(tiles) - 1:
+                new_position += step_2D
 
         return Tiling(self.tileset, new_tiling, new_position, copy_tiling=False)
 

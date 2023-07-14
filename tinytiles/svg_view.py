@@ -1,5 +1,5 @@
 import drawsvg as draw
-from tinytiles.tiling import Tiling, SquareGlues
+from tinytiles.tiling import Tiling, SquareGlues, NoTileCanFit, ManyTilesCanFit
 from tinytiles.utils_2D import TilePosition
 
 TILE_SIZE = 32
@@ -32,28 +32,103 @@ def tile_pos_to_svg_pos(
     )
 
 
+def tile_edges_to_svg(tile, tile_center_x, tile_center_y):
+    edges_group = draw.Group()
+    # The following was found by trial and error
+    a = [-1, 1, 1, -1]
+    b = [-1, -1, 1, 1]
+    c = [1, 0, -1, 0]
+    e = [0, 1, 0, -1]
+
+    def edge_name_to_svg(side, glue):
+        tweak_x = [0, -4, 0, 3.5]
+        tweak_y = [8.5, 2, -2, 2]
+
+        if glue is None:
+            return draw.NoElement()
+
+        return draw.Text(
+            str(glue),
+            8,
+            tile_center_x + (a[side] + c[side]) * (TILE_SIZE / 2) + tweak_x[side],
+            tile_center_y + (b[side] + e[side]) * (TILE_SIZE) / 2 + tweak_y[side],
+            fill="black",
+            text_anchor="middle",
+            valign="middle",
+            font_family="Arimo",
+        )
+
+    for side in range(0, 4):
+        glue = tile[side]
+        color = "transparent"
+        if glue is not None:
+            color = color_wheel[glue]
+        p = draw.Path(
+            stroke="gray",
+            stroke_width=0.5,
+            fill=color,
+            fill_opacity=1,
+            marker_end=None,
+        )
+        p.M(tile_center_x, tile_center_y)
+        p.l(a[side] * (TILE_SIZE / 2), b[side] * (TILE_SIZE / 2))
+        p.l(c[side] * (TILE_SIZE), e[side] * (TILE_SIZE))
+        p.Z()
+        triangle_group = draw.Group([p])
+        triangle_group.children.append(edge_name_to_svg(side, glue))
+        edges_group.append(triangle_group)
+
+    return edges_group
+
+
+def tile_name_to_svg(tiling, tile, tile_center_x, tile_center_y):
+    if tile in tiling.tileset:
+        tweak_offset_x = -0.5
+        tweak_offset_y = 4.2
+        tile_name = str(tiling.tileset.index(tile))
+        return draw.Text(
+            str(tile_name),
+            13,
+            tile_center_x + tweak_offset_x,
+            tile_center_y + tweak_offset_y,
+            fill="black",
+            text_anchor="middle",
+            valign="middle",
+            font_weight="bold",
+            font_family="Arimo",
+        )
+    return draw.NoElement()
+
+
 def tile_to_svg(
     tiling: Tiling,
     position: TilePosition,
-    tile: SquareGlues,
+    tile: SquareGlues | NoTileCanFit | ManyTilesCanFit,
     bounding_box: tuple[int, int, int, int],
 ):
     svg_position = tile_pos_to_svg_pos(position, bounding_box)
     svg_tile = draw.Group()
+
+    # Tile square
     svg_tile.append(
         draw.Rectangle(
-            svg_position.x, svg_position.y, TILE_SIZE, TILE_SIZE, fill=random_color()
-        )
-    )
-    svg_tile.append(
-        draw.Text(
-            str(tiling.tileset.index(tile)),
-            20,
             svg_position.x,
-            svg_position.y + 20,
-            color="#000000",
+            svg_position.y,
+            TILE_SIZE,
+            TILE_SIZE,
+            stroke="gray",
+            stroke_width=1,
+            fill=null_glue_color,
         )
     )
+
+    tile_center_x = svg_position.x + TILE_SIZE / 2
+    tile_center_y = svg_position.y + TILE_SIZE / 2
+
+    svg_tile.append(tile_edges_to_svg(tile, tile_center_x, tile_center_y))
+
+    svg_tile.append(tile_name_to_svg(tiling, tile, tile_center_x, tile_center_y))
+
     return svg_tile
 
 
