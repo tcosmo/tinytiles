@@ -27,6 +27,8 @@ East = Position(1, 0)
 South = Position(0, -1)
 West = Position(-1, 0)
 
+DIRS = [North, East, South, West]
+
 
 class GridPosition(Position):
     pass

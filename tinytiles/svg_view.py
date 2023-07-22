@@ -12,7 +12,7 @@ null_glue_color = "#CACACA"
 color_wheel = ["#E6C58F", "#0AC52E", "#E37998", "#3FB3F3"]
 color_no_tile_can_fit = "#ff0000"
 color_many_tiles_can_fit = "#00af00"
-special_tiles_opacity = 0.4
+special_tiles_opacity = 0.3
 
 
 def random_color() -> str:
@@ -152,11 +152,45 @@ def tile_to_svg(
     return svg_tile
 
 
-def tiling_to_svg(tiling: Tiling) -> draw.Drawing:
+def tiling_to_svg(
+    tiling: Tiling,
+    hihghlight_positions: list[TilePosition | tuple[TilePosition, str]] = [],
+) -> draw.Drawing:
     min_x, min_y, w, h = tiling.bounding_box()
     svg = draw.Drawing(TILE_SIZE * w, TILE_SIZE * h)
     for position in tiling:
         svg.append(
             tile_to_svg(tiling, position, tiling[position], (min_x, min_y, w, h))
         )
+
+    for elem in hihghlight_positions:
+        try:
+            pos, color = elem
+            svg_pos = tile_pos_to_svg_pos(pos, (min_x, min_y, w, h))
+            svg.append(
+                draw.Rectangle(
+                    svg_pos.x,
+                    svg_pos.y,
+                    TILE_SIZE,
+                    TILE_SIZE,
+                    stroke=color,
+                    stroke_width=2,
+                    fill=color,
+                    fill_opacity=0.4,
+                )
+            )
+        except Exception as _:
+            pos = elem
+            svg_pos = tile_pos_to_svg_pos(pos, (min_x, min_y, w, h))
+            svg.append(
+                draw.Rectangle(
+                    svg_pos.x,
+                    svg_pos.y,
+                    TILE_SIZE,
+                    TILE_SIZE,
+                    stroke="blue",
+                    stroke_width=2,
+                    fill="transparent",
+                )
+            )
     return svg
